@@ -542,6 +542,21 @@ export function ListDetail() {
     }
   };
 
+  const handleEditItem = async (itemId: string, data: { title: string; description: string; url: string }) => {
+    const { error } = await supabase
+      .from('list_items')
+      .update({ title: data.title, description: data.description, url: data.url })
+      .eq('id', itemId);
+
+    if (error) {
+      toast.error('Failed to update item');
+      throw error;
+    }
+
+    setItems(items.map((i) => i.id === itemId ? { ...i, ...data } : i));
+    toast.success('Item updated');
+  };
+
   const handleShuffle = async () => {
     const shuffled = [...items].sort(() => Math.random() - 0.5);
     setItems(shuffled);
@@ -750,6 +765,7 @@ export function ListDetail() {
                       onDownvote={() => handleDownvote(item)}
                       onRate={(rating) => handleRate(item, rating)}
                       onDelete={() => handleDelete(item.id)}
+                      onEdit={canEdit ? (data) => handleEditItem(item.id, data) : undefined}
                       onAddComment={(comment) => handleAddComment(item.id, comment)}
                       onDeleteComment={handleDeleteComment}
                       orderNumber={settings.enable_ordering ? index + 1 : undefined}
@@ -793,6 +809,7 @@ export function ListDetail() {
                   onDownvote={() => handleDownvote(item)}
                   onRate={(rating) => handleRate(item, rating)}
                   onDelete={() => handleDelete(item.id)}
+                  onEdit={canEdit ? (data) => handleEditItem(item.id, data) : undefined}
                   onAddComment={(comment) => handleAddComment(item.id, comment)}
                   onDeleteComment={handleDeleteComment}
                   orderNumber={settings.enable_ordering ? index + 1 : undefined}

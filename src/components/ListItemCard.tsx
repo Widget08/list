@@ -6,8 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ListItem, ListSettings, ListStatus, ListComment } from '@/lib/supabase';
-import { ArrowUp, ArrowDown, Trash2, ExternalLink, Star, MessageSquare, Check, X, Send } from 'lucide-react';
+import { ArrowUp, ArrowDown, Trash2, ExternalLink, Star, MessageSquare, Check, X, Send, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type ListItemCardProps = {
@@ -26,6 +29,7 @@ type ListItemCardProps = {
   onDownvote?: () => void;
   onRate: (rating: number) => void;
   onDelete: () => void;
+  onEdit?: (data: { title: string; description: string; url: string }) => Promise<void>;
   onAddComment: (comment: string) => Promise<void>;
   onDeleteComment: (commentId: string) => Promise<void>;
   orderNumber?: number;
@@ -49,6 +53,7 @@ export function ListItemCard({
   onDownvote,
   onRate,
   onDelete,
+  onEdit,
   onAddComment,
   onDeleteComment,
   orderNumber,
@@ -58,6 +63,29 @@ export function ListItemCard({
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editTitle, setEditTitle] = useState(item.title);
+  const [editDescription, setEditDescription] = useState(item.description || '');
+  const [editUrl, setEditUrl] = useState(item.url || '');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const handleOpenEdit = () => {
+    setEditTitle(item.title);
+    setEditDescription(item.description || '');
+    setEditUrl(item.url || '');
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTitle.trim() || !onEdit) return;
+    setIsSavingEdit(true);
+    try {
+      await onEdit({ title: editTitle.trim(), description: editDescription.trim(), url: editUrl.trim() });
+      setShowEditDialog(false);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
@@ -71,6 +99,53 @@ export function ListItemCard({
     }
   };
   return (
+    <>
+    <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Item</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-title">Title</Label>
+            <Input
+              id="edit-title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Item title"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-description">Description</Label>
+            <Textarea
+              id="edit-description"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Optional description"
+              className="min-h-[80px] resize-none"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-url">URL</Label>
+            <Input
+              id="edit-url"
+              value={editUrl}
+              onChange={(e) => setEditUrl(e.target.value)}
+              placeholder="https://..."
+              type="url"
+            />
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={isSavingEdit}>
+            Cancel
+          </Button>
+          <Button onClick={handleSaveEdit} disabled={!editTitle.trim() || isSavingEdit}>
+            {isSavingEdit ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="py-3 sm:py-4 px-2 sm:px-6">
         <div className="flex items-start gap-2 sm:gap-3">
@@ -116,6 +191,17 @@ export function ListItemCard({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent align="end" className="w-40 p-1">
+                    {onEdit && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleOpenEdit}
+                        className="w-full justify-start text-slate-700 hover:text-slate-900 hover:bg-slate-50"
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -385,5 +471,6 @@ export function ListItemCard({
         )}
       </CardContent>
     </Card>
+    </>
   );
 }

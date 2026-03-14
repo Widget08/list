@@ -20,6 +20,7 @@ type SortableListItemProps = {
   onDownvote?: () => void;
   onRate: (rating: number) => void;
   onDelete: () => void;
+  onEdit?: (data: { title: string; description: string; url: string }) => Promise<void>;
   onAddComment: (comment: string) => Promise<void>;
   onDeleteComment: (commentId: string) => Promise<void>;
   currentUserId?: string;
@@ -44,6 +45,7 @@ export function SortableListItem({
   onDownvote,
   onRate,
   onDelete,
+  onEdit,
   onAddComment,
   onDeleteComment,
   currentUserId,
@@ -113,6 +115,7 @@ export function SortableListItem({
           onDownvote={onDownvote}
           onRate={onRate}
           onDelete={onDelete}
+          onEdit={onEdit}
           onAddComment={onAddComment}
           onDeleteComment={onDeleteComment}
           currentUserId={currentUserId}
