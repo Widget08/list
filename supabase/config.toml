@@ -1,0 +1,8 @@
+[functions.search-users]
+verify_jwt = true
+
+[functions.push-notifications]
+verify_jwt = false
+
+[functions.weekly-summary]
+verify_jwt = false

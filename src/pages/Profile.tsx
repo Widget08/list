@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Mail, User, Edit, Check, X, Chrome, Link as LinkIcon, Unlink } from 'lucide-react';
+import { ArrowLeft, Mail, User, Edit, Check, X, Chrome, Link as LinkIcon, Unlink, Calendar, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function Profile() {
@@ -19,6 +20,9 @@ export function Profile() {
   const [saving, setSaving] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [unlinkingGoogle, setUnlinkingGoogle] = useState(false);
+  const [accountAgeDays, setAccountAgeDays] = useState<number | null>(null);
+  const [weeklySummaryEnabled, setWeeklySummaryEnabled] = useState(false);
+  const [updatingWeeklySummary, setUpdatingWeeklySummary] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -38,6 +42,21 @@ export function Profile() {
 
       setUsername(data?.username || null);
       setNewUsername(data?.username || '');
+
+      const { data: ageData, error: ageError } = await supabase
+        .rpc('get_account_age_days', { p_user_id: user!.id });
+      if (!ageError && ageData !== null) {
+        setAccountAgeDays(ageData as number);
+      }
+
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('weekly_summary_enabled')
+        .eq('id', user!.id)
+        .maybeSingle();
+      if (profileData) {
+        setWeeklySummaryEnabled(profileData.weekly_summary_enabled ?? false);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast.error('Failed to load profile');
@@ -131,6 +150,26 @@ export function Profile() {
   const handleCancelEdit = () => {
     setNewUsername(username || '');
     setEditingUsername(false);
+  };
+
+  const handleToggleWeeklySummary = async (enabled: boolean) => {
+    setUpdatingWeeklySummary(true);
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ weekly_summary_enabled: enabled })
+        .eq('id', user!.id);
+
+      if (error) throw error;
+
+      setWeeklySummaryEnabled(enabled);
+      toast.success(enabled ? 'Weekly summary emails enabled' : 'Weekly summary emails disabled');
+    } catch (error) {
+      console.error('Error updating weekly summary preference:', error);
+      toast.error('Failed to update email preference');
+    } finally {
+      setUpdatingWeeklySummary(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -258,6 +297,18 @@ export function Profile() {
                 <p className="text-sm text-slate-600">{user.email}</p>
               </div>
             </div>
+
+            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+              <Calendar className="h-5 w-5 text-slate-600" />
+              <div>
+                <p className="text-sm font-medium text-slate-700">Member For</p>
+                <p className="text-sm text-slate-600">
+                  {accountAgeDays !== null
+                    ? `${accountAgeDays} day${accountAgeDays === 1 ? '' : 's'}`
+                    : 'Loading...'}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -301,6 +352,29 @@ export function Profile() {
                   {linkingGoogle ? 'Linking...' : 'Link'}
                 </Button>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Notifications</CardTitle>
+            <CardDescription>Manage your email preferences</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Bell className="h-5 w-5 text-slate-600" />
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Weekly Summary Email</p>
+                  <p className="text-xs text-slate-500">Get a weekly email with your list stats every Monday</p>
+                </div>
+              </div>
+              <Switch
+                checked={weeklySummaryEnabled}
+                onCheckedChange={handleToggleWeeklySummary}
+                disabled={updatingWeeklySummary}
+              />
             </div>
           </CardContent>
         </Card>

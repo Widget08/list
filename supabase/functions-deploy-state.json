@@ -1,0 +1,13 @@
+{
+  "projectId": "58966011",
+  "functions": {
+    "search-users": {
+      "hasChanged": false,
+      "hash": "167d859c365df79a06634ae583eefdd66a9d8254eedc341fd536016796c5c843"
+    },
+    "weekly-summary": {
+      "hasChanged": false,
+      "hash": "4dff73b2cc0abbad72e9bb946de986733fcd8ef4268ac44f622bc874b27add10"
+    }
+  }
+}
